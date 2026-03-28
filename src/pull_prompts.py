@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 PROMPT_TO_PULL = "leonanluppi/bug_to_user_story_v1"
 OUTPUT_FILE = "prompts/bug_to_user_story_v1.yml"
+RAW_OUTPUT_FILE = "prompts/raw_prompts.yml"
 
 
 def extract_prompt_content(prompt_template) -> dict:
@@ -103,21 +104,27 @@ def pull_prompts_from_langsmith() -> bool:
         }
     }
 
-    # Salvar localmente
+    # Salvar localmente (versão nomeada)
     output_path = Path(OUTPUT_FILE)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     success = save_yaml(prompt_data, str(output_path))
 
-    if success:
-        print(f"\n   ✓ Prompt salvo em: {OUTPUT_FILE}")
-        print(f"\n   Conteúdo do system_prompt (primeiros 200 chars):")
-        preview = content["system_prompt"][:200].replace("\n", " ")
-        print(f"   {preview}...")
-        return True
-    else:
+    if not success:
         print(f"   ❌ Erro ao salvar arquivo {OUTPUT_FILE}")
         return False
+
+    print(f"   ✓ Prompt salvo em: {OUTPUT_FILE}")
+
+    # Salvar também como raw_prompts.yml (RF-03)
+    raw_path = Path(RAW_OUTPUT_FILE)
+    save_yaml(prompt_data, str(raw_path))
+    print(f"   ✓ Output bruto salvo em: {RAW_OUTPUT_FILE}")
+
+    print(f"\n   Conteúdo do system_prompt (primeiros 200 chars):")
+    preview = content["system_prompt"][:200].replace("\n", " ")
+    print(f"   {preview}...")
+    return True
 
 
 def main():
