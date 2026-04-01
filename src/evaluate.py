@@ -25,6 +25,7 @@ import os
 import sys
 import json
 import time
+import argparse
 from typing import List, Dict, Any
 from pathlib import Path
 from dotenv import load_dotenv
@@ -37,6 +38,7 @@ from metrics import (
     evaluate_acceptance_criteria_score,
     evaluate_user_story_format_score,
     evaluate_completeness_score,
+    evaluate_f1_score,
 )
 
 load_dotenv()
@@ -205,6 +207,7 @@ def evaluate_prompt(
 
         llm = get_llm()
 
+        f1_scores = []
         tone_scores = []
         acceptance_scores = []
         format_scores = []
@@ -212,7 +215,7 @@ def evaluate_prompt(
 
         print("   Avaliando exemplos...")
 
-        # 3 exemplos × 5 chamadas = 15 chamadas total (dentro do limite de 20/dia)
+        # 3 exemplos × 6 chamadas = 18 chamadas total (dentro do limite de 20/dia)
         # Sleep de 13s entre cada chamada para respeitar 5 req/min do free tier
         RATE_LIMIT_SLEEP = 13
 
@@ -223,6 +226,8 @@ def evaluate_prompt(
             time.sleep(RATE_LIMIT_SLEEP)
 
             if result["answer"]:
+                f1 = evaluate_f1_score(result["question"], result["answer"], result["reference"])
+                time.sleep(RATE_LIMIT_SLEEP)
                 tone = evaluate_tone_score(result["question"], result["answer"], result["reference"])
                 time.sleep(RATE_LIMIT_SLEEP)
                 acceptance = evaluate_acceptance_criteria_score(result["question"], result["answer"], result["reference"])
@@ -231,6 +236,7 @@ def evaluate_prompt(
                 time.sleep(RATE_LIMIT_SLEEP)
                 completeness = evaluate_completeness_score(result["question"], result["answer"], result["reference"])
 
+                f1_scores.append(f1["score"])
                 tone_scores.append(tone["score"])
                 acceptance_scores.append(acceptance["score"])
                 format_scores.append(fmt["score"])
@@ -238,6 +244,7 @@ def evaluate_prompt(
 
                 print(
                     f"      [{i}/3] "
+                    f"F1:{f1['score']:.2f} "
                     f"Tone:{tone['score']:.2f} "
                     f"Acceptance:{acceptance['score']:.2f} "
                     f"Format:{fmt['score']:.2f} "
@@ -248,6 +255,7 @@ def evaluate_prompt(
             return round(sum(lst) / len(lst), 4) if lst else 0.0
 
         return {
+            "f1_score": avg(f1_scores),
             "tone": avg(tone_scores),
             "acceptance_criteria": avg(acceptance_scores),
             "user_story_format": avg(format_scores),
@@ -270,6 +278,7 @@ def display_results(prompt_name: str, scores: Dict[str, float]) -> bool:
     print("=" * 50)
 
     metric_labels = {
+        "f1_score": "F1-Score",
         "tone": "Tone Score",
         "acceptance_criteria": "Acceptance Criteria Score",
         "user_story_format": "User Story Format Score",
@@ -310,6 +319,10 @@ def display_results(prompt_name: str, scores: Dict[str, float]) -> bool:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Avalia prompts do LangSmith Hub")
+    parser.add_argument("--prompt", type=str, default=None, help="Nome completo do prompt no hub (ex: usuario/bug_to_user_story_v1)")
+    args = parser.parse_args()
+
     print_section_header("AVALIAÇÃO DE PROMPTS - BUG TO USER STORY")
 
     provider = os.getenv("LLM_PROVIDER", "openai")
@@ -329,15 +342,18 @@ def main():
     if not check_env_vars(required_vars):
         return 1
 
-    # Verificar username para montar nome completo do prompt
-    username = os.getenv("USERNAME_LANGSMITH_HUB", "").strip()
-    if not username:
-        print("⚠️  USERNAME_LANGSMITH_HUB não configurado no .env")
-        print("   Configure com seu username do LangSmith para avaliar o prompt correto.")
-        print("   Tentando avaliar sem prefixo de username...\n")
-        prompt_full_name = "bug_to_user_story_v2"
+    # Usar --prompt se fornecido, senão montar a partir do username
+    if args.prompt:
+        prompt_full_name = args.prompt
     else:
-        prompt_full_name = f"{username}/bug_to_user_story_v2"
+        username = os.getenv("USERNAME_LANGSMITH_HUB", "").strip()
+        if not username:
+            print("⚠️  USERNAME_LANGSMITH_HUB não configurado no .env")
+            print("   Configure com seu username do LangSmith para avaliar o prompt correto.")
+            print("   Tentando avaliar sem prefixo de username...\n")
+            prompt_full_name = "bug_to_user_story_v2"
+        else:
+            prompt_full_name = f"{username}/bug_to_user_story_v2"
 
     client = Client()
     project_name = os.getenv("LANGCHAIN_PROJECT", "prompt-optimization-challenge-resolved")
@@ -380,7 +396,7 @@ def main():
         all_passed = False
         results_summary.append({
             "prompt": prompt_full_name,
-            "scores": {"tone": 0.0, "acceptance_criteria": 0.0, "user_story_format": 0.0, "completeness": 0.0},
+            "scores": {"f1_score": 0.0, "tone": 0.0, "acceptance_criteria": 0.0, "user_story_format": 0.0, "completeness": 0.0},
             "passed": False
         })
 
