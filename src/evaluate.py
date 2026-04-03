@@ -159,10 +159,12 @@ def display_results(prompt_name: str, results) -> bool:
     }
 
     for row in results._results:
-        for eval_result in (row.evaluation_results or {}).get("results", []):
-            key = eval_result.key
-            if key in scores and eval_result.score is not None:
-                scores[key].append(float(eval_result.score))
+        eval_results_raw = row.evaluation_results if hasattr(row, "evaluation_results") else row.get("evaluation_results")
+        for eval_result in (eval_results_raw or {}).get("results", []):
+            key = eval_result.key if hasattr(eval_result, "key") else eval_result.get("key")
+            score_val = eval_result.score if hasattr(eval_result, "score") else eval_result.get("score")
+            if key in scores and score_val is not None:
+                scores[key].append(float(score_val))
 
     def avg(lst):
         return round(sum(lst) / len(lst), 4) if lst else 0.0
