@@ -34,25 +34,29 @@ bug_to_user_story_v2:
     Para que [benefício ou valor de negócio concreto].
 
     **Critérios de Aceitação:**
-    - Dado que [contexto ou pré-condição]
-    - Quando [ação realizada pelo usuário ou sistema]
-    - Então [resultado esperado e verificável]
-    [Inclua entre 3 e 5 critérios de aceitação no formato Dado/Quando/Então]
+    - Dado que [contexto ou pré-condição inicial]
+    - Quando [ação realizada]
+    - Então [resultado principal esperado]
+    - E [resultado adicional esperado — inclua quando o cenário gera múltiplos efeitos]
+    - E [outro resultado adicional, se houver]
+    [Repita o bloco Dado/Quando/Então/E para cenários distintos. Total: 2 a 4 blocos, cobrindo cenário principal + edge cases relevantes]
 
     **Contexto Técnico:**
-    [Descrição do impacto técnico, módulo afetado e informações relevantes para os desenvolvedores]
+    [Descrição do impacto no usuário/negócio, módulo afetado, causa provável e informações relevantes para os desenvolvedores]
 
     **Tarefas Técnicas:**
-    - [Lista de tarefas técnicas específicas para resolver o problema]
+    - [Tarefa técnica 1 — específica e acionável]
+    - [Tarefa técnica 2 — específica e acionável]
+    - [Tarefa técnica 3 — específica e acionável]
 
     ## REGRAS DE COMPORTAMENTO
 
     1. SEMPRE defina uma persona específica e realista (ex: "cliente navegando na loja", "usuário administrador", "vendedor cadastrando produto")
     2. SEMPRE foque no VALOR para o usuário, não na descrição técnica do bug
     3. SEMPRE use linguagem positiva e empática ("Eu quero poder fazer X" em vez de "O bug X impede Y")
-    4. SEMPRE inclua pelo menos 3 critérios de aceitação no formato Dado/Quando/Então
-    5. SEMPRE inclua o contexto técnico com informações relevantes para os desenvolvedores
-    6. SEMPRE liste pelo menos 3 tarefas técnicas específicas para resolver o problema
+    4. SEMPRE inclua 2 a 4 blocos de critérios de aceitação no formato expandido: cada bloco com "Dado que / Quando / Então" em linhas separadas, seguidos de quantas linhas "E" forem necessárias para cobrir todos os efeitos esperados do cenário
+    5. SEMPRE inclua o contexto técnico descrevendo: impacto no usuário/negócio, módulo afetado e causa provável
+    6. SEMPRE liste pelo menos 3 tarefas técnicas específicas e acionáveis para resolver o problema
     7. NUNCA use jargões técnicos excessivos na User Story principal (seção Como/Eu quero/Para que)
     8. NUNCA deixe campos vagos, genéricos ou com placeholders
     9. Mantenha tom profissional, empático e orientado ao valor
@@ -72,14 +76,15 @@ bug_to_user_story_v2:
     Para que eu possa continuar comprando e finalizar minha compra posteriormente sem perder os itens selecionados.
 
     **Critérios de Aceitação:**
-    - Dado que estou visualizando a página de um produto disponível em estoque
+    - Dado que estou visualizando a página de um produto
     - Quando clico no botão "Adicionar ao Carrinho"
     - Então o produto deve ser imediatamente adicionado ao meu carrinho
-    - E devo ver uma confirmação visual (notificação toast ou animação) indicando o sucesso da ação
-    - E o contador de itens no ícone do carrinho deve ser atualizado instantaneamente
-    - Dado que o produto foi adicionado com sucesso
+    - E devo ver uma confirmação visual (notificação toast ou animação)
+    - E o contador de itens do carrinho deve ser atualizado instantaneamente
+
+    - Dado que o produto foi adicionado ao carrinho
     - Quando acesso a página do carrinho
-    - Então o produto deve estar listado corretamente com nome, imagem, quantidade e preço
+    - Então o produto deve estar listado com nome, imagem, quantidade e preço corretos
 
     **Contexto Técnico:**
     O evento de clique no botão "Adicionar ao Carrinho" não está disparando a ação correspondente
@@ -108,16 +113,19 @@ bug_to_user_story_v2:
     Para que eu possa finalizar minha compra sem ser bloqueado por erros de validação incorretos.
 
     **Critérios de Aceitação:**
-    - Dado que estou preenchendo o formulário de checkout com um CPF inválido (ex: 111.111.111-11)
-    - Quando tento avançar para a próxima etapa
-    - Então o sistema deve exibir uma mensagem de erro clara indicando que o CPF é inválido
-    - E não deve permitir a submissão do formulário com CPF inválido
-    - Dado que preencho o formulário com um CPF válido no formato correto
-    - Quando clico em "Continuar" ou "Finalizar Compra"
-    - Então o sistema deve aceitar o CPF e avançar para a próxima etapa sem erros
-    - Dado que preencho o CPF sem formatação (apenas números)
+    - Dado que preencho o campo CPF com um valor inválido (ex: 111.111.111-11)
+    - Quando tento avançar no checkout
+    - Então o sistema deve exibir mensagem de erro
+    - E a submissão deve ser bloqueada
+
+    - Dado que preencho o campo CPF com um valor válido no formato correto
+    - Quando clico em "Continuar"
+    - Então o sistema deve aceitar e avançar sem erros
+    - E os dados do CPF devem ser preservados na próxima etapa
+
+    - Dado que digito o CPF sem formatação (somente números)
     - Quando o campo perde o foco
-    - Então o sistema deve formatar automaticamente o CPF (XXX.XXX.XXX-XX)
+    - Então o sistema deve aplicar a máscara automaticamente (XXX.XXX.XXX-XX)
 
     **Contexto Técnico:**
     A lógica de validação de CPF está com defeito: aceita números inválidos e rejeita válidos.
@@ -147,15 +155,19 @@ bug_to_user_story_v2:
 
     **Critérios de Aceitação:**
     - Dado que estou na tela de login e clico em "Esqueci minha senha"
-    - Quando insiro meu email cadastrado e confirmo a solicitação
-    - Então devo receber um email com link de redefinição de senha em até 2 minutos
-    - E a tela deve exibir a mensagem "Email enviado com sucesso. Verifique sua caixa de entrada."
-    - Dado que clico no link de redefinição recebido por email
-    - Quando insiro e confirmo a nova senha seguindo os critérios de segurança
-    - Então minha senha deve ser atualizada e devo ser redirecionado para o login
-    - Dado que o email informado não está cadastrado na plataforma
-    - Quando envio a solicitação de redefinição
-    - Então o sistema deve exibir mensagem genérica de segurança sem revelar se o email existe
+    - Quando insiro meu email e confirmo a solicitação
+    - Então devo receber o email de redefinição em até 2 minutos
+    - E devo ver uma mensagem de confirmação na tela
+    - E a tela não deve entrar em loop de carregamento
+
+    - Dado que recebi o email com o link de redefinição
+    - Quando clico no link e defino a nova senha
+    - Então a senha deve ser atualizada com sucesso
+    - E devo ser redirecionado para o login
+
+    - Dado que informo um email não cadastrado na plataforma
+    - Quando envio a solicitação de recuperação
+    - Então o sistema deve exibir mensagem genérica sem revelar se o email existe
 
     **Contexto Técnico:**
     O fluxo de recuperação de senha apresenta dois problemas: (1) a tela entra em loop de carregamento
@@ -176,11 +188,11 @@ bug_to_user_story_v2:
     Antes de escrever a User Story, analise mentalmente o bug report seguindo estes passos:
 
     1. **Identifique o usuário afetado**: Quem está sofrendo com esse bug? Qual é o contexto de uso?
-    2. **Entenda o impacto real**: O que o usuário não consegue fazer por causa desse bug? Qual é o custo?
+    2. **Entenda o impacto real**: O que o usuário não consegue fazer? Qual é o custo/prejuízo para o negócio?
     3. **Foque no valor a ser entregue**: Qual é o benefício concreto quando o bug for corrigido?
-    4. **Defina critérios verificáveis**: O que precisa ser verdadeiro para o problema estar resolvido?
-    5. **Contextualize para os devs**: Quais informações técnicas são relevantes para a implementação?
-    6. **Liste tarefas concretas**: Quais são os passos técnicos necessários para resolver o problema?
+    4. **Defina critérios verificáveis**: O que precisa ser verdadeiro para o problema estar resolvido? Inclua cenário principal + edge cases relevantes.
+    5. **Contextualize para os devs**: Qual módulo está afetado? Qual a causa provável? Qual o impacto técnico?
+    6. **Liste tarefas concretas**: Quais são os passos técnicos específicos e acionáveis para resolver o problema?
 
     Agora, analise o bug report abaixo e crie a User Story completa seguindo o formato e exemplos acima:
 

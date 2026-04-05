@@ -12,7 +12,7 @@ Demonstra o ciclo completo de engenharia de prompts: extração, análise, otimi
 |---|---|
 | **Prompt otimizado** | `bug_to_user_story_v2.yml` - Conversão de Bug Reports em User Stories |
 | **Técnicas aplicadas** | Role Prompting, Few-shot Learning, Chain of Thought, Skeleton of Thought |
-| **Métricas de avaliação** | Tone Score, Acceptance Criteria Score, User Story Format Score, Completeness Score |
+| **Métricas de avaliação** | F1-Score, Tone Score, Acceptance Criteria Score, User Story Format Score, Completeness Score |
 | **Dataset** | 15 exemplos de bugs (5 simples, 7 médios, 3 complexos) |
 | **Status** | ✅ Pronto para avaliação no LangSmith |
 
@@ -154,13 +154,16 @@ As 4 técnicas trabalham conjuntamente para alcançar a melhor qualidade:
 
 | Métrica | v1 (Baseline) | v2 (Otimizado) | Melhoria | Status |
 |---|---|---|---|---|
-| **Tone Score** | ~0.45 | ≥ 0.90 | +100% | ✅ APROVADO |
-| **Acceptance Criteria Score** | ~0.52 | ≥ 0.90 | +73% | ✅ APROVADO |
-| **User Story Format Score** | ~0.48 | ≥ 0.90 | +88% | ✅ APROVADO |
-| **Completeness Score** | ~0.50 | ≥ 0.90 | +80% | ✅ APROVADO |
-| **Média Aritmética** | **~0.49** | **≥ 0.90** | **+84%** | **✅ APROVADO** |
+| **F1-Score** | ~0.40 | 0.87 → ≥ 0.90* | +118% | 🔄 EM AJUSTE |
+| **Tone Score** | ~0.45 | 0.99 | +120% | ✅ APROVADO |
+| **Acceptance Criteria Score** | ~0.52 | 0.94 | +81% | ✅ APROVADO |
+| **User Story Format Score** | ~0.48 | 1.00 | +108% | ✅ APROVADO |
+| **Completeness Score** | ~0.50 | 1.00 | +100% | ✅ APROVADO |
+| **Média Geral** | **~0.47** | **0.96** | **+104%** | **✅ APROVADO** |
 
-**Critério de aprovação:** Todas as 4 métricas ≥ 0.90 E média ≥ 0.90 ✅
+*F1-Score de 0.87 detectado na última avaliação. O prompt foi refatorado para corrigir o formato dos critérios de aceitação (Dado/Quando/Então/E em linhas separadas), aguardando nova execução de avaliação.
+
+**Critério de aprovação:** Todas as 5 métricas ≥ 0.90 E média ≥ 0.90
 
 ---
 
@@ -413,11 +416,11 @@ Experimento executado com `python src/evaluate.py --prompt gabrielsimon775/bug_t
 
 ### Execuções do Prompt v2 (Otimizado - ≥ 0.9)
 
-> Screenshot será adicionado após execução final do `python src/evaluate.py`.
+![alt text](image-9.png)
 
 ---
 
-### Tracing Detalhado de 3 Exemplos
+### Tracing Detalhado de 3 Exemplos | bug_to_user_story_v1
 
 Cada exemplo mostra o fluxo completo: `ChatPromptTemplate → ChatGoogleGenerativeAI → Output`.
 
@@ -454,6 +457,38 @@ Input:
 Output:
 
 ![Trace exemplo 3 - output](image-8.png)
+
+---
+
+### Tracing Detalhado de 3 Exemplos | bug_to_user_story_v2
+
+Exemplo 1
+
+Input:
+![alt text](image-10.png)
+
+Output:
+![alt text](image-11.png)
+
+---
+
+Exemplo 2
+
+Input:
+![alt text](image-12.png)
+
+Output:
+![alt text](image-13.png)
+
+---
+
+Exemplo 3
+
+Input:
+![alt text](image-14.png)
+
+Output:
+![alt text](image-15.png)
 
 ---
 
@@ -507,31 +542,38 @@ mba-ia-pull-evaluation-prompt/
 
 ## 📊 Métricas de Avaliação
 
-O projeto implementa **4 métricas customizadas** executadas por LLM:
+O projeto implementa **5 métricas customizadas** executadas por LLM:
 
-### 1. Tone Score
+### 1. F1-Score
+**Avalia:** Balanceamento entre Precision e Recall em relação à user story de referência
+- Precision: o conteúdo gerado é correto e relevante ao bug?
+- Recall: o conteúdo da referência está presente na resposta gerada?
+- F1 = 2 × (Precision × Recall) / (Precision + Recall)
+- Range: 0.0 a 1.0
+
+### 3. Tone Score
 **Avalia:** Tom profissional, empatia, clareza e linguagem adequada
 - Pontua se a User Story é escrita com tom apropriado (não técnico demais, não vago)
 - Range: 0.0 a 1.0
 
-### 2. Acceptance Criteria Score
+### 4. Acceptance Criteria Score
 **Avalia:** Qualidade dos critérios de aceitação
 - Pontua se os "Dado/Quando/Então" estão presentes, claros e verificáveis
 - Range: 0.0 a 1.0
 
-### 3. User Story Format Score
+### 5. User Story Format Score
 **Avalia:** Conformidade ao formato padrão
 - Pontua se segue "Como X / Eu quero Y / Para que Z"
 - Range: 0.0 a 1.0
 
-### 4. Completeness Score
+### 6. Completeness Score
 **Avalia:** Completude da resposta
 - Pontua se inclui contexto técnico, tarefas técnicas e cobre o bug completamente
 - Range: 0.0 a 1.0
 
 **Critério de Aprovação:**
-- ✅ Todas as 4 métricas ≥ 0.90 **E**
-- ✅ Média aritmética ≥ 0.90
+- ✅ Todas as 5 métricas ≥ 0.90 **E**
+- ✅ Média geral ≥ 0.90
 
 ---
 
