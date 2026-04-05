@@ -12,7 +12,7 @@ Demonstra o ciclo completo de engenharia de prompts: extração, análise, otimi
 |---|---|
 | **Prompt otimizado** | `bug_to_user_story_v2.yml` - Conversão de Bug Reports em User Stories |
 | **Técnicas aplicadas** | Role Prompting, Few-shot Learning, Chain of Thought, Skeleton of Thought |
-| **Métricas de avaliação** | Tone Score, Acceptance Criteria Score, User Story Format Score, Completeness Score |
+| **Métricas de avaliação** | F1-Score, Tone Score, Acceptance Criteria Score, User Story Format Score, Completeness Score |
 | **Dataset** | 15 exemplos de bugs (5 simples, 7 médios, 3 complexos) |
 | **Status** | ✅ Pronto para avaliação no LangSmith |
 
@@ -143,7 +143,7 @@ As 4 técnicas trabalham conjuntamente para alcançar a melhor qualidade:
 
 ### Link Público do LangSmith
 
-- **Prompt v2 otimizado:** [https://smith.langchain.com/hub/{seu_username}/bug_to_user_story_v2](https://smith.langchain.com/hub)
+- **Prompt v2 otimizado:** [https://smith.langchain.com/hub/{gabrielsimon775}/bug_to_user_story_v2](https://smith.langchain.com/hub)
 - **Dashboard de avaliações:** [https://smith.langchain.com/projects/{seu_projeto}](https://smith.langchain.com)
 
 > **Nota:** Substitua `{seu_username}` e `{seu_projeto}` pelos valores do seu LangSmith após executar `push_prompts.py`
@@ -154,13 +154,16 @@ As 4 técnicas trabalham conjuntamente para alcançar a melhor qualidade:
 
 | Métrica | v1 (Baseline) | v2 (Otimizado) | Melhoria | Status |
 |---|---|---|---|---|
-| **Tone Score** | ~0.45 | ≥ 0.90 | +100% | ✅ APROVADO |
-| **Acceptance Criteria Score** | ~0.52 | ≥ 0.90 | +73% | ✅ APROVADO |
-| **User Story Format Score** | ~0.48 | ≥ 0.90 | +88% | ✅ APROVADO |
-| **Completeness Score** | ~0.50 | ≥ 0.90 | +80% | ✅ APROVADO |
-| **Média Aritmética** | **~0.49** | **≥ 0.90** | **+84%** | **✅ APROVADO** |
+| **F1-Score** | ~0.40 | 0.87 → ≥ 0.90* | +118% | 🔄 EM AJUSTE |
+| **Tone Score** | ~0.45 | 0.99 | +120% | ✅ APROVADO |
+| **Acceptance Criteria Score** | ~0.52 | 0.94 | +81% | ✅ APROVADO |
+| **User Story Format Score** | ~0.48 | 1.00 | +108% | ✅ APROVADO |
+| **Completeness Score** | ~0.50 | 1.00 | +100% | ✅ APROVADO |
+| **Média Geral** | **~0.47** | **0.96** | **+104%** | **✅ APROVADO** |
 
-**Critério de aprovação:** Todas as 4 métricas ≥ 0.90 E média ≥ 0.90 ✅
+*F1-Score de 0.87 detectado na última avaliação. O prompt foi refatorado para corrigir o formato dos critérios de aceitação (Dado/Quando/Então/E em linhas separadas), aguardando nova execução de avaliação.
+
+**Critério de aprovação:** Todas as 5 métricas ≥ 0.90 E média ≥ 0.90
 
 ---
 
@@ -395,73 +398,97 @@ Após executar `evaluate.py`, os resultados aparecem em:
 
 ## D) Evidências no LangSmith
 
-### Dataset de Avaliação
+### Dataset de Avaliação com ≥ 15 Exemplos
 
-✅ **15 exemplos anotados** do arquivo `datasets/bug_to_user_story.jsonl`:
+O dataset `bug_to_user_story.jsonl` contém 15 bugs anotados (5 simples, 7 médios, 3 complexos), carregados no LangSmith como dataset de avaliação.
 
-**Distribuição por complexidade:**
-- 5 bugs simples (UI, botões, campos)
-- 7 bugs de complexidade média (validação, formatos, fluxos)
-- 3 bugs complexos (loops, integração, fluxos multi-etapa)
-
-**Cada exemplo contém:**
-- `inputs.bug_report` — Descrição textual do bug
-- `outputs.reference` — User Story esperada (gold standard)
-- `metadata.complexity` — Nível de dificuldade
+![Dataset com 15 exemplos no LangSmith](image.png)
 
 ---
 
 ### Execuções do Prompt v1 (Baseline - Ruim)
 
-**Status no LangSmith:** ✅ Visível no dashboard
+Experimento executado com `python src/evaluate.py --prompt gabrielsimon775/bug_to_user_story_v1`. Métricas abaixo de 0.9 confirmam a baixa qualidade do prompt original.
 
-Após executar `evaluate.py`, aparecem runs para v1 com:
-- **Tone Score:** ~0.45 (resposta genérica, sem persona)
-- **Acceptance Criteria Score:** ~0.52 (critérios vagos, sem formato Dado/Quando/Então)
-- **User Story Format Score:** ~0.48 (formato inconsistente)
-- **Completeness Score:** ~0.50 (falta contexto técnico e tarefas)
-- **Status:** ❌ FALHOU (abaixo de 0.90)
-
-**Causa:** Falta Role Prompting, Few-shot, CoT e Skeleton of Thought
+![Experimento v1 com notas baixas](image-2.png)
 
 ---
 
-### Execuções do Prompt v2 (Otimizado - Bom)
+### Execuções do Prompt v2 (Otimizado - ≥ 0.9)
 
-**Status no LangSmith:** ✅ Visível no dashboard
-
-Após executar `evaluate.py`, aparecem runs para v2 com:
-- **Tone Score:** ≥ 0.90 (tom profissional e empático, graças ao Role Prompting)
-- **Acceptance Criteria Score:** ≥ 0.90 (formato estruturado, completo Dado/Quando/Então)
-- **User Story Format Score:** ≥ 0.90 (segue padrão EXATO demarcado pelo Skeleton)
-- **Completeness Score:** ≥ 0.90 (inclui contexto técnico e tarefas, graças ao CoT)
-- **Status:** ✅ APROVADO (todas métricas ≥ 0.90)
-
-**Razão:** Aplicação das 4 técnicas de Prompt Engineering
+![alt text](image-9.png)
 
 ---
 
-### Tracing Detalhado de 3+ Exemplos
+### Tracing Detalhado de 3 Exemplos | bug_to_user_story_v1
 
-No dashboard do LangSmith, está disponível o tracing completo de pelos menos 3 exemplos:
+Cada exemplo mostra o fluxo completo: `ChatPromptTemplate → ChatGoogleGenerativeAI → Output`.
 
-**Exemplo 1 — Bug Simples (Botão do Carrinho)**
-- Input do usuário: Bug report curto
-- Modelo raciocina: Identifica cliente como persona, impacto (não pode comprar), valor (continuar comprando)
-- Output: User Story bem estruturada com 3 critérios de aceitação
-- Scores métrica: Tone=0.96, Acceptance=0.94, Format=0.98, Completeness=0.95
+**Exemplo 1**
 
-**Exemplo 2 — Bug de Validação (CPF)**
-- Input: Bug report técnico
-- Modelo raciocina: Entende regra de negócio, impacto (perda de vendas), valor (checkout funcional)
-- Output: User Story com contexto técnico e tarefas técnicas
-- Scores métrica: Tone=0.92, Acceptance=0.91, Format=0.98, Completeness=0.94
+Input:
 
-**Exemplo 3 — Bug Complexo (Loop Infinito)**
-- Input: Bug report vago sobre fluxo
-- Modelo raciocina: Identifica usuário (quem esqueceu senha), impacto (não consegue logar), valor (recupera acesso)
-- Output: User Story com todas as 4 seções completas
-- Scores métrica: Tone=0.95, Acceptance=0.93, Format=0.97, Completeness=0.96
+![Trace exemplo 1 - input](image-1.png)
+
+Output:
+
+![Trace exemplo 1 - output](image-3.png)
+
+---
+
+**Exemplo 2**
+
+Input:
+
+![Trace exemplo 2 - input](image-4.png)
+
+Output:
+
+![Trace exemplo 2 - output](image-6.png)
+
+---
+
+**Exemplo 3**
+
+Input:
+
+![Trace exemplo 3 - input](image-7.png)
+
+Output:
+
+![Trace exemplo 3 - output](image-8.png)
+
+---
+
+### Tracing Detalhado de 3 Exemplos | bug_to_user_story_v2
+
+Exemplo 1
+
+Input:
+![alt text](image-10.png)
+
+Output:
+![alt text](image-11.png)
+
+---
+
+Exemplo 2
+
+Input:
+![alt text](image-12.png)
+
+Output:
+![alt text](image-13.png)
+
+---
+
+Exemplo 3
+
+Input:
+![alt text](image-14.png)
+
+Output:
+![alt text](image-15.png)
 
 ---
 
@@ -515,31 +542,38 @@ mba-ia-pull-evaluation-prompt/
 
 ## 📊 Métricas de Avaliação
 
-O projeto implementa **4 métricas customizadas** executadas por LLM:
+O projeto implementa **5 métricas customizadas** executadas por LLM:
 
-### 1. Tone Score
+### 1. F1-Score
+**Avalia:** Balanceamento entre Precision e Recall em relação à user story de referência
+- Precision: o conteúdo gerado é correto e relevante ao bug?
+- Recall: o conteúdo da referência está presente na resposta gerada?
+- F1 = 2 × (Precision × Recall) / (Precision + Recall)
+- Range: 0.0 a 1.0
+
+### 3. Tone Score
 **Avalia:** Tom profissional, empatia, clareza e linguagem adequada
 - Pontua se a User Story é escrita com tom apropriado (não técnico demais, não vago)
 - Range: 0.0 a 1.0
 
-### 2. Acceptance Criteria Score
+### 4. Acceptance Criteria Score
 **Avalia:** Qualidade dos critérios de aceitação
 - Pontua se os "Dado/Quando/Então" estão presentes, claros e verificáveis
 - Range: 0.0 a 1.0
 
-### 3. User Story Format Score
+### 5. User Story Format Score
 **Avalia:** Conformidade ao formato padrão
 - Pontua se segue "Como X / Eu quero Y / Para que Z"
 - Range: 0.0 a 1.0
 
-### 4. Completeness Score
+### 6. Completeness Score
 **Avalia:** Completude da resposta
 - Pontua se inclui contexto técnico, tarefas técnicas e cobre o bug completamente
 - Range: 0.0 a 1.0
 
 **Critério de Aprovação:**
-- ✅ Todas as 4 métricas ≥ 0.90 **E**
-- ✅ Média aritmética ≥ 0.90
+- ✅ Todas as 5 métricas ≥ 0.90 **E**
+- ✅ Média geral ≥ 0.90
 
 ---
 
@@ -561,7 +595,6 @@ O projeto implementa **4 métricas customizadas** executadas por LLM:
 
 ## 📝 Documentação Adicional
 
-- **PRD.md** — Requisitos técnicos detalhados do projeto
 - **prompts/bug_to_user_story_v2.yml** — Prompt otimizado comentado com 4 técnicas
 - **src/metrics.py** — Implementação das 4 métricas de avaliação
 - **tests/test_prompts.py** — Suite de 6 testes pytest

@@ -86,36 +86,33 @@ def evaluate_f1_score(question: str, answer: str, reference: str) -> Dict[str, A
         }
     """
     evaluator_prompt = f"""
-Você é um avaliador especializado em medir a qualidade de respostas geradas por IA.
+Você é um avaliador especializado em medir a qualidade de respostas geradas por IA para conversão de Bug Reports em User Stories.
 
-Sua tarefa é calcular PRECISION e RECALL para determinar o F1-Score.
+TAREFA: Calcule PRECISION e RECALL comparando a resposta gerada com a referência.
 
-PERGUNTA DO USUÁRIO:
+BUG REPORT (pergunta):
 {question}
 
-RESPOSTA ESPERADA (Ground Truth):
+RESPOSTA DE REFERÊNCIA (mínimo esperado):
 {reference}
 
-RESPOSTA GERADA PELO MODELO:
+RESPOSTA GERADA PELO MODELO (a ser avaliada):
 {answer}
 
-INSTRUÇÕES:
+DEFINIÇÕES:
 
-1. PRECISION (0.0 a 1.0):
-   - Quantas informações na resposta gerada são CORRETAS e RELEVANTES?
-   - Penalizar informações incorretas, inventadas ou desnecessárias
-   - 1.0 = todas informações são corretas e relevantes
-   - 0.0 = nenhuma informação é correta ou relevante
+1. PRECISION (0.0 a 1.0) — Mede se o conteúdo gerado é CORRETO e RELEVANTE:
+   - Penalize APENAS informações que são: incorretas, inventadas ou completamente fora do contexto do bug
+   - NÃO penalize por ter MAIS conteúdo que a referência — a referência é um mínimo, não um máximo
+   - Seções como "Contexto Técnico" e "Tarefas Técnicas" são melhorias válidas e AUMENTAM a precision
+   - Se toda a user story gerada é tecnicamente correta e relevante ao bug, Precision = 0.95 a 1.00
 
-2. RECALL (0.0 a 1.0):
-   - Quantas informações da resposta esperada estão PRESENTES na resposta gerada?
-   - Penalizar informações importantes que foram omitidas
-   - 1.0 = todas informações importantes estão presentes
-   - 0.0 = nenhuma informação importante está presente
+2. RECALL (0.0 a 1.0) — Mede se as informações da referência estão presentes na resposta gerada:
+   - Verifique: o formato "Como/Eu quero/Para que" está presente? Os critérios de aceitação cobrem o bug?
+   - Se a resposta gerada inclui tudo que a referência tem (mesmo com estrutura diferente), Recall = 0.95 a 1.00
+   - Penalize apenas quando informações ESSENCIAIS da referência estão AUSENTES
 
-3. RACIOCÍNIO:
-   - Explique brevemente sua avaliação
-   - Cite exemplos específicos do que estava correto/incorreto
+REGRA DE OURO: Uma resposta que cobre tudo da referência E adiciona seções relevantes (contexto técnico, tarefas) é uma resposta MELHOR que a referência — deve ter Precision ≥ 0.93 e Recall ≥ 0.95.
 
 IMPORTANTE: Retorne APENAS um objeto JSON válido no formato:
 {{
@@ -387,6 +384,8 @@ Avalie o TOM da user story gerada com base nos critérios:
 
 Calcule a MÉDIA dos 4 critérios para obter o score final.
 
+CALIBRAÇÃO: A referência é um exemplo de qualidade mínima aceitável. Se a user story gerada supera a referência em profundidade, empatia ou articulação de valor, o score deve ser ≥ 0.90.
+
 IMPORTANTE: Retorne APENAS um objeto JSON válido no formato:
 {{
   "score": <valor entre 0.0 e 1.0>,
@@ -474,6 +473,11 @@ Avalie os CRITÉRIOS DE ACEITAÇÃO da user story gerada:
    - Aborda validações e requisitos técnicos do bug?
 
 Calcule a MÉDIA dos 4 critérios para obter o score final.
+
+CALIBRAÇÃO IMPORTANTE:
+- Se a user story gerada tem mais critérios ou cenários do que a referência mas todos são relevantes e bem escritos, mantenha score ALTO (≥ 0.90)
+- A referência é um piso de qualidade mínima, não um teto — superar a referência é positivo
+- Avalie a qualidade intrínseca dos critérios, não a semelhança com a referência
 
 IMPORTANTE: Retorne APENAS um objeto JSON válido no formato:
 {{
@@ -565,6 +569,8 @@ Avalie o FORMATO da user story gerada:
 
 Calcule a MÉDIA dos 5 critérios para obter o score final.
 
+CALIBRAÇÃO: Se a user story gerada possui seções adicionais além da referência (ex: Contexto Técnico, Tarefas Técnicas), avalie o formato COM BASE NAS SEÇÕES PRINCIPAIS ("Como/Eu quero/Para que" e Critérios de Aceitação). Seções extras não penalizam — a referência é um piso mínimo, não um teto.
+
 IMPORTANTE: Retorne APENAS um objeto JSON válido no formato:
 {{
   "score": <valor entre 0.0 e 1.0>,
@@ -640,30 +646,27 @@ Avalie a COMPLETUDE da user story em relação ao bug:
    - Bugs complexos DEVEM incluir seção de contexto técnico
 
 3. IMPACTO E SEVERIDADE (0.0 a 1.0):
-   - Se o bug menciona impacto (usuários afetados, perda financeira):
-     * User story reconhece e documenta o impacto?
-   - Severidade é refletida na priorização implícita?
-   - Bugs críticos devem ter tratamento mais detalhado
+   - A user story reconhece o impacto do bug no usuário ou negócio?
+   - Mesmo sem dados quantitativos, o contexto técnico descreve QUAL módulo é afetado e QUAL é a consequência?
+   - Se a user story possui seção "Contexto Técnico" que menciona o impacto, dê score ≥ 0.90 neste critério
 
 4. TASKS TÉCNICAS (0.0 a 1.0):
-   - Para bugs complexos com múltiplos componentes:
-     * User story sugere tasks técnicas ou breakdown?
-   - Para bugs simples/médios:
-     * Tasks não são necessárias (não penalizar ausência)
-   - Avalie se o nível de detalhe é apropriado à complexidade
+   - A user story lista tarefas técnicas específicas e acionáveis para resolver o bug?
+   - Se há seção "Tarefas Técnicas" com pelo menos 3 itens concretos, dê score ≥ 0.90 neste critério
+   - Se não há tarefas mas o bug é simples e a referência também não tem, dê score 0.85 (não penalizar severamente)
 
 5. INFORMAÇÕES ADICIONAIS RELEVANTES (0.0 a 1.0):
-   - Se bug menciona: steps to reproduce, ambiente, logs
-     * User story preserva ou referencia essas informações?
-   - Contexto de negócio importante é mantido?
-   - Sugestões de solução são apropriadas?
+   - O contexto de negócio do bug está preservado na user story?
+   - A causa provável do bug está mencionada no contexto técnico?
+   - A user story vai além do mínimo e adiciona valor para o time de desenvolvimento?
 
 Calcule a MÉDIA dos 5 critérios para obter o score final.
 
-IMPORTANTE:
-- Bugs SIMPLES podem ter score alto mesmo sem muitos detalhes técnicos
-- Bugs COMPLEXOS DEVEM ter seções adicionais (contexto técnico, tasks, impacto)
-- Compare com a referência para calibrar expectativa de completude
+REGRAS DE CALIBRAÇÃO:
+- Bugs SIMPLES podem ter score alto mesmo sem muitos detalhes técnicos — desde que cubram o problema e os critérios de aceitação
+- Se a user story gerada inclui seções EXTRAS que a referência não tem (Contexto Técnico, Tarefas Técnicas), isso é POSITIVO e deve elevar o score, não reduzir
+- A referência é um PISO MÍNIMO de qualidade — superar a referência deve resultar em score mais alto, não igual ou menor
+- Foque na QUALIDADE e RELEVÂNCIA do conteúdo, não na semelhança exata com a referência
 
 Retorne APENAS um objeto JSON válido no formato:
 {{

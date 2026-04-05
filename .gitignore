@@ -36,6 +36,7 @@ ENV/
 *.swo
 *~
 .DS_Store
+nul
 
 # pytest
 .pytest_cache/
